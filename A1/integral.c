@@ -40,9 +40,30 @@ int main (int argc, const char *argv[]) {
 
 
 double integrate (int num_threads, int samples, int a, int b, double (*f)(double)) {
-    double integral;
+    double integral, s = 0.0;
+    int interval = b - a;
 
-    /* Your code goes here */
+    omp_set_num_threads(num_threads);
 
+    #pragma omp parallel
+    {
+
+        int tid = omp_get_thread_num(); //thread id
+        rand_gen rng = init_rand(tid); //random number generator
+        double local_s = 0.0;
+
+        #pragma omp for
+        for(int i = 0; i < samples; i++){
+            double x = a + (interval * rng.rand_func(rng)); // random value between a and b
+            local_s += f(x); // add f(x) to the local sum
+        }
+
+        #pragma omp atomic
+        s += local_s;
+
+        free_rand(rng);
+    }
+
+    integral = (double)interval * (s / (double)samples);
     return integral;
 }
