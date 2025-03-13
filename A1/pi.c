@@ -8,6 +8,8 @@ SCIPER		: Your SCIPER numbers
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
+#include <time.h>
 #include "utility.h"
 
 double calculate_pi (int num_threads, int samples);
@@ -36,8 +38,32 @@ int main (int argc, const char *argv[]) {
 
 double calculate_pi (int num_threads, int samples) {
     double pi;
+    int count = 0;
 
-    /* Your code goes here */
+    omp_set_num_threads(num_threads);
 
+    #pragma omp parallel
+    {
+
+        int tid = omp_get_thread_num(); //thread id
+        rand_gen rng = init_rand(tid); //random number generator
+        int local_count = 0;
+
+        #pragma omp for
+        for(int i = 0; i < samples; i++){
+            double x = rng.rand_func(rng);
+            double y = rng.rand_func(rng);
+            if((x*x + y*y) <= 1.0)
+                local_count++;
+        }
+
+        #pragma omp atomic
+        count += local_count;
+
+        free_rand(rng);
+    }
+
+
+    pi = 4.0 * ((double)count / (double)samples);
     return pi;
 }
